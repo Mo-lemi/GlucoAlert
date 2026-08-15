@@ -1,0 +1,363 @@
+/* ===== Living Twin Animation System ===== */
+
+.twin-container {
+  position: relative;
+  transform-origin: 50% 100%;
+  transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Idle breathing */
+.twin-container .twin-torso {
+  animation: twin-breathe 4s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+.twin-container .twin-head {
+  animation: twin-bob 4s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+.twin-container .twin-arms {
+  animation: twin-arm-sway 4s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+.twin-container .twin-shadow {
+  animation: twin-shadow-pulse 4s ease-in-out infinite;
+}
+
+@keyframes twin-breathe {
+  0%, 100% { transform: scaleY(1) scaleX(1); }
+  50% { transform: scaleY(1.02) scaleX(0.99); }
+}
+@keyframes twin-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+@keyframes twin-arm-sway {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(1.5deg); }
+}
+@keyframes twin-shadow-pulse {
+  0%, 100% { opacity: 0.35; transform: scale(1); }
+  50% { opacity: 0.25; transform: scale(0.95); }
+}
+
+/* ===== Posture by band ===== */
+
+/* High sync: upright, tall */
+.posture-high {
+  transform: translateY(0) scale(1);
+}
+.posture-high .twin-head {
+  animation-duration: 3.2s;
+}
+.posture-high .twin-torso {
+  animation-duration: 3.2s;
+}
+
+/* Mid sync: slight slouch */
+.posture-mid {
+  transform: translateY(3px) scale(0.98) rotate(-1deg);
+}
+.posture-mid .twin-head {
+  animation-duration: 4.5s;
+}
+.posture-mid .twin-torso {
+  animation-duration: 4.5s;
+}
+
+/* Low sync: drooped, dim */
+.posture-low {
+  transform: translateY(8px) scale(0.95) rotate(-2.5deg);
+}
+.posture-low .twin-head {
+  animation-duration: 6s;
+}
+.posture-low .twin-torso {
+  animation-duration: 6s;
+}
+.posture-low .twin-head circle:first-child {
+  filter: brightness(0.85);
+}
+.posture-low .twin-torso rect:first-child {
+  filter: brightness(0.8);
+}
+
+/* ===== One-shot reactions ===== */
+
+.reaction-goodmeal {
+  animation: react-goodmeal 1.6s ease-in-out;
+}
+@keyframes react-goodmeal {
+  0% { transform: translateY(0) scale(1); }
+  20% { transform: translateY(-6px) scale(1.03); }
+  40% { transform: translateY(0) scale(1); }
+  60% { transform: translateY(-3px) scale(1.02); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+.reaction-junk {
+  animation: react-junk 1.6s ease-in-out;
+}
+@keyframes react-junk {
+  0% { transform: translateX(0); }
+  15% { transform: translateX(-6px) rotate(-2deg); }
+  30% { transform: translateX(6px) rotate(2deg); }
+  45% { transform: translateX(-4px) rotate(-1deg); }
+  60% { transform: translateX(3px) rotate(1deg); }
+  100% { transform: translateX(0); }
+}
+
+.reaction-exercise {
+  animation: react-exercise 1.6s ease-in-out;
+}
+@keyframes react-exercise {
+  0% { transform: translateY(0) scale(1); }
+  15% { transform: translateY(-18px) scale(1.05) rotate(2deg); }
+  30% { transform: translateY(0) scale(1); }
+  45% { transform: translateY(-14px) scale(1.04) rotate(-2deg); }
+  60% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+.reaction-sedentary {
+  animation: react-sedentary 1.6s ease-in-out;
+}
+@keyframes react-sedentary {
+  0% { transform: translateY(0) scale(1); }
+  30% { transform: translateY(6px) scale(0.97) rotate(2deg); }
+  60% { transform: translateY(4px) scale(0.98) rotate(1deg); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+.reaction-sleep {
+  animation: react-sleep 1.6s ease-in-out;
+}
+@keyframes react-sleep {
+  0% { transform: translateY(0) scale(1); }
+  20% { transform: translateY(-4px) scale(1.02); }
+  40% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+.reaction-stress {
+  animation: react-stress 1.6s ease-in-out;
+}
+@keyframes react-stress {
+  0% { transform: translateX(0) rotate(0); }
+  10% { transform: translateX(-5px) rotate(-3deg); }
+  20% { transform: translateX(5px) rotate(3deg); }
+  30% { transform: translateX(-5px) rotate(-3deg); }
+  40% { transform: translateX(5px) rotate(3deg); }
+  50% { transform: translateX(-3px) rotate(-2deg); }
+  60% { transform: translateX(3px) rotate(2deg); }
+  100% { transform: translateX(0) rotate(0); }
+}
+
+/* Blink */
+.twin-eyes-blink ellipse {
+  ry: 1px;
+  transition: ry 0.05s;
+}
+
+/* ===== Activity animations ===== */
+
+/* Walking: bobbing + leg swing */
+.activity-walk {
+  animation: activity-walk 0.8s ease-in-out infinite;
+}
+@keyframes activity-walk {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-3px) rotate(1deg); }
+  50% { transform: translateY(0) rotate(0deg); }
+  75% { transform: translateY(-3px) rotate(-1deg); }
+}
+.activity-walk .twin-legs rect:first-child {
+  animation: leg-swing-left 0.8s ease-in-out infinite;
+  transform-origin: 50% 0%;
+}
+.activity-walk .twin-legs rect:nth-child(2) {
+  animation: leg-swing-right 0.8s ease-in-out infinite;
+  transform-origin: 50% 0%;
+}
+@keyframes leg-swing-left {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(15deg); }
+}
+@keyframes leg-swing-right {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-15deg); }
+}
+.activity-walk .twin-arms {
+  animation: arm-pump 0.8s ease-in-out infinite;
+}
+@keyframes arm-pump {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(8deg); }
+}
+
+/* Running: faster, bigger motion */
+.activity-run {
+  animation: activity-run 0.5s ease-in-out infinite;
+}
+@keyframes activity-run {
+  0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+  25% { transform: translateY(-6px) rotate(2deg) scale(1.02); }
+  50% { transform: translateY(0) rotate(0deg) scale(1); }
+  75% { transform: translateY(-6px) rotate(-2deg) scale(1.02); }
+}
+.activity-run .twin-legs rect:first-child {
+  animation: leg-swing-left 0.5s ease-in-out infinite;
+  transform-origin: 50% 0%;
+}
+.activity-run .twin-legs rect:nth-child(2) {
+  animation: leg-swing-right 0.5s ease-in-out infinite;
+  transform-origin: 50% 0%;
+}
+.activity-run .twin-arms {
+  animation: arm-pump 0.5s ease-in-out infinite;
+}
+
+/* Sitting: lowered, legs bent */
+.activity-sit {
+  transform: translateY(20px) scale(0.92);
+}
+.activity-sit .twin-legs rect:first-child {
+  transform: rotate(60deg) translateY(10px);
+  transform-origin: 50% 0%;
+}
+.activity-sit .twin-legs rect:nth-child(2) {
+  transform: rotate(-60deg) translateY(10px);
+  transform-origin: 50% 0%;
+}
+.activity-sit .twin-torso {
+  animation: sit-breathe 3s ease-in-out infinite;
+}
+@keyframes sit-breathe {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(1.01); }
+}
+
+/* Sleeping: lying down, slow breathing */
+.activity-sleep {
+  transform: translateY(30px) scale(0.85) rotate(-90deg);
+  transform-origin: 50% 100%;
+}
+.activity-sleep .twin-torso {
+  animation: sleep-breathe 5s ease-in-out infinite;
+}
+@keyframes sleep-breathe {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(1.03); }
+}
+.activity-sleep .twin-head {
+  animation: none;
+}
+
+/* Exercise: jumping jacks style */
+.activity-exercise {
+  animation: activity-exercise 0.6s ease-in-out infinite;
+}
+@keyframes activity-exercise {
+  0%, 100% { transform: translateY(0) scale(1); }
+  25% { transform: translateY(-8px) scale(1.05); }
+  50% { transform: translateY(0) scale(1); }
+  75% { transform: translateY(-8px) scale(1.05); }
+}
+.activity-exercise .twin-arms {
+  animation: arm-jack 0.6s ease-in-out infinite;
+}
+@keyframes arm-jack {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(45deg); }
+}
+.activity-exercise .twin-legs rect:first-child {
+  animation: leg-jack-left 0.6s ease-in-out infinite;
+  transform-origin: 50% 0%;
+}
+.activity-exercise .twin-legs rect:nth-child(2) {
+  animation: leg-jack-right 0.6s ease-in-out infinite;
+  transform-origin: 50% 0%;
+}
+@keyframes leg-jack-left {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(20deg); }
+}
+@keyframes leg-jack-right {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-20deg); }
+}
+
+/* Standing: upright, still */
+.activity-stand {
+  transform: translateY(0) scale(1);
+}
+.activity-stand .twin-torso {
+  animation: stand-breathe 3.5s ease-in-out infinite;
+}
+@keyframes stand-breathe {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(1.015); }
+}
+
+/* ===== Reveal mode ===== */
+
+.reveal-mode .twin-torso rect:first-child,
+.reveal-mode .twin-head circle:first-child {
+  opacity: 0.35;
+  transition: opacity 0.5s;
+}
+.reveal-mode .twin-torso rect:nth-child(2) {
+  opacity: 0.2;
+}
+
+.reveal-wave {
+  stroke-dasharray: 6 4;
+  animation: reveal-wave-move 2s linear infinite;
+}
+@keyframes reveal-wave-move {
+  to { stroke-dashoffset: -20; }
+}
+
+.reveal-pulse {
+  transform-origin: 100px 72px;
+  animation: reveal-pulse 1.5s ease-in-out infinite;
+}
+@keyframes reveal-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.15); opacity: 0.7; }
+}
+
+/* Reduced motion: keep state changes, drop reactions */
+@media (prefers-reduced-motion: reduce) {
+  .twin-container .twin-torso,
+  .twin-container .twin-head,
+  .twin-container .twin-arms,
+  .twin-container .twin-shadow {
+    animation: none;
+  }
+  .reaction-goodmeal,
+  .reaction-junk,
+  .reaction-exercise,
+  .reaction-sedentary,
+  .reaction-sleep,
+  .reaction-stress {
+    animation: none;
+  }
+  .activity-walk,
+  .activity-run,
+  .activity-exercise,
+  .activity-sit .twin-torso,
+  .activity-sleep .twin-torso,
+  .activity-stand .twin-torso,
+  .activity-walk .twin-legs rect,
+  .activity-walk .twin-arms,
+  .activity-run .twin-legs rect,
+  .activity-run .twin-arms,
+  .activity-exercise .twin-arms,
+  .activity-exercise .twin-legs rect {
+    animation: none;
+  }
+  .reveal-wave,
+  .reveal-pulse {
+    animation: none;
+  }
+}
