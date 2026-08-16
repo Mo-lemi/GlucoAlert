@@ -1,20 +1,20 @@
-# GlucoAlert — A Living Digital Twin for Diabetes Awareness
+# PulseTwin — A Living Digital Twin for Diabetes Awareness
 
 > **"See your future self before your body shows it."**
 
-GlucoAlert is a **real-time life-simulation game** built for the Girl Code hackathon (health-tech track). It turns the invisible, silent build-up of Type 2 diabetes into a living, emotional, and educational experience. The user tells the app what they are doing in real time — walking, sitting, sleeping, eating, stressing — and a human-like avatar visibly mirrors those choices, showing the internal consequences the body hides for years.
+PulseTwin is a **real-time life-simulation game** built for the Girl Code hackathon (health-tech track). It turns the invisible, silent build-up of Type 2 diabetes into a living, emotional, and educational experience. The user tells the app what they are doing in real time — walking, sitting, sleeping, eating, stressing — and a human-like avatar visibly mirrors those choices, showing the internal consequences the body hides for years.
 
 > ⚠️ **Educational simulation only — not medical advice, diagnosis, or prediction.**
 
 ---
 
-## 🌟 Why GlucoAlert exists
+## 🌟 Why PulseTwin exists
 
 - **The silent problem:** More than 2 in 5 U.S. adults have prediabetes; ~8 in 10 of them don't know it. *(CDC)*
 - **The invisible disease:** Insulin resistance can build for years before blood sugar moves enough to trigger a diagnosis.
 - **The engagement gap:** Graphs and pamphlets don't create emotional buy-in. A living character that slumps when you sit all day, flinches when you eat sugar, and brightens when you move *does*.
 
-GlucoAlert converts evidence into an emotional, playable lesson.
+PulseTwin converts evidence into an emotional, playable lesson.
 
 ---
 
@@ -147,7 +147,7 @@ npm run preview -- --host 0.0.0.0
 ## 📁 Project structure
 
 ```text
-GlucoAlert/
+pulsetwin/
 ├── src/
 │   ├── activity.ts            # activity definitions + duration math
 │   ├── parser.ts              # natural-language command parser

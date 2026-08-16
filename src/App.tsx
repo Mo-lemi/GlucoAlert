@@ -1,256 +1,572 @@
-import { useEffect, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useMemo, useState } from 'react'
 import LivingTwin from './components/LivingTwin'
-import ActionPanel from './components/ActionPanel'
-import ActivityPanel from './components/ActivityPanel'
-import ActiveActivityTracker from './components/ActiveActivityTracker'
-import CommandBox from './components/CommandBox'
-import StatusPanel from './components/StatusPanel'
-import Timeline from './components/Timeline'
-import Coach from './components/Coach'
-import HealthInsights from './components/HealthInsights'
-import PreventionLab from './components/PreventionLab'
-import RevealMode from './components/RevealMode'
-import TimeProjection from './components/TimeProjection'
-import Quiz from './components/Quiz'
-import Badges from './components/Badges'
-import HistoryChart from './components/HistoryChart'
-import PresentationMode from './components/PresentationMode'
-import { useStore } from './store'
-import { BANDS, DISCLAIMER } from './data'
 import type { ActionKey, Band } from './types'
 import './twin.css'
 
-const getBand = (score: number): Band => (score >= 70 ? 'high' : score >= 40 ? 'mid' : 'low')
-const PRESENTATION_DONE_KEY = 'pulsetwin-presentation-completed-v1'
+type AgeGroup = 'child' | 'teen' | 'adult'
+type Screen = 'landing' | 'name' | 'age' | 'journey' | 'lesson' | 'quiz' | 'result' | 'dashboard'
 
-const hasCompletedPresentation = () => {
-  try {
-    return window.localStorage.getItem(PRESENTATION_DONE_KEY) === 'true'
-  } catch {
-    return false
-  }
+type Level = {
+  id: number
+  world: string
+  levelLabel: string
+  title: string
+  fact: string
+  question: string
+  options: string[]
+  correctIndex: number
+  explanation: string
+  xp: number
 }
 
-const markPresentationCompleted = () => {
-  try {
-    window.localStorage.setItem(PRESENTATION_DONE_KEY, 'true')
-  } catch {
-    // Ignore storage write failures (private mode / blocked storage)
-  }
+const ageGroupInfo: Record<AgeGroup, { title: string; description: string; question: string; options: string[] }> = {
+  child: {
+    title: 'Child',
+    description: 'Learning the basics',
+    question: 'Which drink is a healthier everyday choice?',
+    options: ['Water', 'Fizzy drink', 'Energy drink'],
+  },
+  teen: {
+    title: 'Teen',
+    description: 'Understanding your health',
+    question: 'Why can regular physical activity help reduce the risk of type 2 diabetes?',
+    options: [
+      'It helps the body use insulin more effectively',
+      'It removes all sugar from the body',
+      'It means you can never develop diabetes',
+    ],
+  },
+  adult: {
+    title: 'Adult',
+    description: 'Taking control of your health',
+    question: 'Which combination can increase the risk of developing type 2 diabetes?',
+    options: [
+      'Physical inactivity + unhealthy diet',
+      'Drinking water + regular activity',
+      'Getting enough sleep + balanced meals',
+    ],
+  },
 }
+
+const levels: Level[] = [
+  {
+    id: 1,
+    world: '🌱 World 1',
+    levelLabel: 'Level 1',
+    title: 'Meet Diabetes',
+    fact: 'Diabetes affects how your body manages blood sugar, also called glucose.',
+    question: 'What is diabetes?',
+    options: ['A condition that affects how the body manages blood sugar', 'A type of vitamin', 'A heart rhythm only'],
+    correctIndex: 0,
+    explanation: 'Diabetes is a condition that affects how the body handles blood sugar, mainly through insulin and glucose balance.',
+    xp: 100,
+  },
+  {
+    id: 2,
+    world: '🌱 World 1',
+    levelLabel: 'Level 2',
+    title: 'Blood Sugar Basics',
+    fact: 'Your body turns carbohydrates into glucose, which is used for energy.',
+    question: 'What is blood sugar?',
+    options: ['The amount of glucose in your blood', 'A type of protein', 'A heart beat count'],
+    correctIndex: 0,
+    explanation: 'Blood sugar is the amount of glucose in your bloodstream, which your body uses as a main energy source.',
+    xp: 120,
+  },
+  {
+    id: 3,
+    world: '🌱 World 1',
+    levelLabel: 'Level 3',
+    title: 'Understanding Insulin',
+    fact: 'Insulin helps move glucose from the blood into cells for energy.',
+    question: 'What is insulin mainly used for?',
+    options: ['To carry oxygen', 'To help glucose get into cells', 'To make protein'],
+    correctIndex: 1,
+    explanation: 'Insulin acts like a key that helps glucose move from the bloodstream into cells where it can be used for energy.',
+    xp: 150,
+  },
+  {
+    id: 4,
+    world: '🥗 World 2',
+    levelLabel: 'Level 4',
+    title: 'Food & Nutrition',
+    fact: 'Balanced meals with fiber, protein, and healthy fats help keep blood sugar steadier.',
+    question: 'Which meal is a healthier choice?',
+    options: ['Whole grains + vegetables + lean protein', 'Only fizzy drinks', 'Candy and chips'],
+    correctIndex: 0,
+    explanation: 'Meals with fiber, protein, and balanced carbs are more steady for blood sugar than sugary, highly processed snacks.',
+    xp: 180,
+  },
+  {
+    id: 5,
+    world: '🥗 World 2',
+    levelLabel: 'Level 5',
+    title: 'Drinks & Sugar',
+    fact: 'Sugary drinks can cause a sharp rise in blood sugar with little nutrition.',
+    question: 'Which drink is a healthier everyday choice?',
+    options: ['Water', 'Fizzy drink', 'Energy drink'],
+    correctIndex: 0,
+    explanation: 'Water is a great everyday choice because it does not contain added sugar and helps keep you hydrated.',
+    xp: 190,
+  },
+  {
+    id: 6,
+    world: '🥗 World 2',
+    levelLabel: 'Level 6',
+    title: 'Portion Size',
+    fact: 'Portion size matters because even healthy foods can affect blood sugar in large amounts.',
+    question: 'Which habit supports healthy blood sugar?',
+    options: ['Listening to portions and balanced meals', 'Eating huge servings of snacks', 'Skipping meals all day'],
+    correctIndex: 0,
+    explanation: 'Balanced portions and regular meals help prevent big blood sugar swings.',
+    xp: 200,
+  },
+]
+
+const leaderboard = [
+  { name: 'Lerato', xp: 3850 },
+  { name: 'Thabo', xp: 3620 },
+  { name: 'Ayanda', xp: 3450 },
+  { name: 'Andiswa', xp: 2450 },
+  { name: 'Kabelo', xp: 2300 },
+]
+
+const habitCards: {
+  key: ActionKey
+  label: string
+  kind: 'good' | 'bad'
+  bonus: number
+  message: string
+}[] = [
+  { key: 'goodmeal', label: 'Ate a balanced breakfast', kind: 'good', bonus: 45, message: 'Amazing! Fiber-rich meals help keep blood sugar steadier.' },
+  { key: 'exercise', label: 'Went for a 20-minute walk', kind: 'good', bonus: 60, message: 'You’re on fire! Movement helps the body use insulin better.' },
+  { key: 'sleep', label: 'Slept 8 hours', kind: 'good', bonus: 50, message: 'Great job! Rest helps regulate stress and appetite.' },
+  { key: 'goodmeal', label: 'Drank water instead of soda', kind: 'good', bonus: 35, message: 'Perfect choice! Water supports everyday hydration without added sugar.' },
+  { key: 'junk', label: 'Had sugary soda', kind: 'bad', bonus: 0, message: 'Not quite — your body can recover with a better next choice. Try water or a protein snack.' },
+  { key: 'sedentary', label: 'Sat all day without moving', kind: 'bad', bonus: 0, message: 'You’re learning! A short walk can help reset your energy and blood sugar.' },
+  { key: 'stress', label: 'Skipped meals while feeling stressed', kind: 'bad', bonus: 0, message: 'You’ve got this — regular meals and breaks help your energy stay balanced.' },
+]
 
 export default function App() {
-  const syncScore = useStore((s) => s.syncScore)
-  const streak = useStore((s) => s.streak)
-  const awarenessPoints = useStore((s) => s.awarenessPoints)
-  const history = useStore((s) => s.history)
-  const logAction = useStore((s) => s.logAction)
-  const reset = useStore((s) => s.reset)
-  const activeActivity = useStore((s) => s.activeActivity)
-
-  const tick = useStore((s) => s.tick)
-
+  const [screen, setScreen] = useState<Screen>('landing')
+  const [nameDraft, setNameDraft] = useState('Andiswa')
+  const [playerName, setPlayerName] = useState('Andiswa')
+  const [ageGroup, setAgeGroup] = useState<AgeGroup>('teen')
+  const [currentLevelIndex, setCurrentLevelIndex] = useState(0)
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null)
+  const [answerResult, setAnswerResult] = useState<boolean | null>(null)
+  const [xp, setXp] = useState(2450)
+  const [streak, setStreak] = useState(7)
+  const [rank, setRank] = useState(7)
+  const [unlockedLevel, setUnlockedLevel] = useState(1)
   const [lastAction, setLastAction] = useState<ActionKey | null>(null)
-  const [revealMode, setRevealMode] = useState(false)
-  const [showProjection, setShowProjection] = useState(false)
-  const [appMode, setAppMode] = useState<'presentation-version' | 'game'>(() =>
-    hasCompletedPresentation() ? 'game' : 'presentation-version'
+  const [habitSync, setHabitSync] = useState(74)
+  const [habitFeedback, setHabitFeedback] = useState<{
+    kind: 'good' | 'bad'
+    title: string
+    message: string
+  } | null>(null)
+
+  const currentLevel = levels[currentLevelIndex]
+  const ageProfile = ageGroupInfo[ageGroup]
+
+  const currentProgress = useMemo(() => Math.min(100, ((currentLevelIndex + 1) / levels.length) * 100), [currentLevelIndex])
+  const twinBand: Band = habitSync >= 70 ? 'high' : habitSync >= 40 ? 'mid' : 'low'
+
+  const startGuestDemo = () => {
+    setPlayerName('Guest')
+    setNameDraft('Guest')
+    setScreen('journey')
+  }
+
+  const continueToAgeSelection = () => {
+    const trimmed = nameDraft.trim() || 'Andiswa'
+    setPlayerName(trimmed)
+    setScreen('age')
+  }
+
+  const finishProfile = () => {
+    setScreen('journey')
+  }
+
+  const selectLevel = (index: number) => {
+    if (index > unlockedLevel - 1) return
+    setCurrentLevelIndex(index)
+    setScreen('lesson')
+  }
+
+  const startLesson = () => {
+    setSelectedAnswer(null)
+    setAnswerResult(null)
+    setScreen('quiz')
+  }
+
+  const submitAnswer = (optionIndex: number) => {
+    if (selectedAnswer !== null) return
+    setSelectedAnswer(optionIndex)
+    const correct = optionIndex === currentLevel.correctIndex
+    setAnswerResult(correct)
+
+    if (correct) {
+      setXp((value) => value + currentLevel.xp)
+      setStreak((value) => value + 1)
+      setRank((value) => Math.max(1, value - 1))
+    }
+
+    setScreen('result')
+  }
+
+  const retryQuiz = () => {
+    setSelectedAnswer(null)
+    setAnswerResult(null)
+    setScreen('quiz')
+  }
+
+  const continueFromResult = () => {
+    if (answerResult) {
+      const nextUnlocked = Math.min(levels.length, Math.max(unlockedLevel, currentLevelIndex + 2))
+      setUnlockedLevel(nextUnlocked)
+
+      if (currentLevelIndex === levels.length - 1) {
+        setScreen('dashboard')
+        return
+      }
+
+      setCurrentLevelIndex((value) => Math.min(value + 1, levels.length - 1))
+    }
+
+    setScreen('lesson')
+  }
+
+  const renderLanding = () => (
+    <div className="game-shell hero-panel">
+      <div className="mascot-orbit">
+        <motion.div
+          className="mascot-card"
+          animate={{ y: [0, -10, 0], rotate: [0, 2, -2, 0] }}
+          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          <span className="mascot-emoji">🩺</span>
+        </motion.div>
+      </div>
+
+      <div className="brand-lockup">
+        <div className="brand-badge">GlucoAlert</div>
+        <h1 className="hero-title">Learn. Play. Level Up. Take Control.</h1>
+        <p className="hero-subtitle">A diabetes education game that turns knowledge into wins, streaks, and healthy habits.</p>
+      </div>
+
+      <div className="cta-stack">
+        <button onClick={() => setScreen('name')} className="primary-button">Create Account</button>
+        <button onClick={() => setScreen('name')} className="secondary-button">Login</button>
+        <button onClick={startGuestDemo} className="guest-button">Guest / Demo Mode</button>
+      </div>
+    </div>
   )
 
-  // Simulation tick loop — update meters every 5 seconds while an activity is active
-  useEffect(() => {
-    if (!activeActivity) return
-    const interval = setInterval(tick, 5000)
-    return () => clearInterval(interval)
-  }, [activeActivity, tick])
+  const renderNameScreen = () => (
+    <div className="game-shell panel-glass">
+      <div className="step-pill">Step 1 of 2</div>
+      <h2 className="panel-title">What&apos;s your name?</h2>
+      <input
+        value={nameDraft}
+        onChange={(event) => setNameDraft(event.target.value)}
+        className="name-input"
+        placeholder="Enter your name"
+      />
+      <div className="inline-actions">
+        <button onClick={continueToAgeSelection} className="primary-button">Continue</button>
+      </div>
+    </div>
+  )
 
-  const band = getBand(syncScore)
-  const bandInfo = BANDS[band]
+  const renderAgeScreen = () => (
+    <div className="game-shell panel-glass">
+      <div className="step-pill">Step 2 of 2</div>
+      <h2 className="panel-title">Nice to meet you, {playerName}! 🎉</h2>
+      <p className="section-label">Choose your learning journey</p>
+      <div className="age-grid">
+        {(Object.keys(ageGroupInfo) as AgeGroup[]).map((group) => {
+          const info = ageGroupInfo[group]
+          const isSelected = ageGroup === group
 
-  const handleAction = (key: ActionKey) => {
-    logAction(key)
-    setLastAction(key)
+          return (
+            <button
+              key={group}
+              onClick={() => setAgeGroup(group)}
+              className={`age-card ${isSelected ? 'selected' : ''}`}
+            >
+              <div className="age-icon">{group === 'child' ? '🧒' : group === 'teen' ? '🧑' : '👩'}</div>
+              <div className="age-name">{info.title}</div>
+              <div className="age-description">{info.description}</div>
+            </button>
+          )
+        })}
+      </div>
+      <button onClick={finishProfile} className="primary-button">Start Adventure</button>
+    </div>
+  )
+
+  const handleHabitChoice = (entry: { key: ActionKey; kind: 'good' | 'bad'; bonus: number; message: string }) => {
+    setLastAction(entry.key)
+
+    if (entry.kind === 'good') {
+      setXp((value) => value + entry.bonus)
+      setHabitSync((value) => Math.min(100, value + 8))
+      setHabitFeedback({
+        kind: 'good',
+        title: 'You’re on fire! ✨',
+        message: entry.message,
+      })
+      return
+    }
+
+    setHabitSync((value) => Math.max(0, value - 10))
+    setHabitFeedback({
+      kind: 'bad',
+      title: 'Not quite — you’ve got this! 💪',
+      message: entry.message,
+    })
   }
 
-  const enterGameFromPresentation = () => {
-    markPresentationCompleted()
-    setAppMode('game')
-  }
+  const renderJourney = () => (
+    <div className="game-shell panel-glass">
+      <div className="welcome-row">
+        <div>
+          <div className="section-label">Welcome, {playerName}! 👋</div>
+          <h2 className="panel-title">Your diabetes adventure starts here.</h2>
+        </div>
+        <div className="xp-badge">⭐ {xp} XP</div>
+      </div>
 
-  const openPresentationVersion = () => {
-    setAppMode('presentation-version')
-  }
+      <div className="habit-layout">
+        <div className="habit-twin-panel">
+          <LivingTwin
+            syncScore={habitSync}
+            band={twinBand}
+            lastAction={lastAction}
+            actionCount={lastAction ? 1 : 0}
+            revealMode={false}
+            activityType={null}
+          />
+        </div>
 
-  const actionCount = history.length
+        <div className="habit-panel">
+          <div className="mini-title">Real-life habit check-in</div>
+          <div className="habit-grid">
+            {habitCards.map((entry) => (
+              <button
+                key={entry.label}
+                className={`habit-button ${entry.kind}`}
+                onClick={() => handleHabitChoice(entry)}
+              >
+                <span>{entry.label}</span>
+                <strong>{entry.kind === 'good' ? `+${entry.bonus} XP` : 'Learn & improve'}</strong>
+              </button>
+            ))}
+          </div>
 
-  if (appMode === 'presentation-version') {
-    return <PresentationMode onExitToGame={enterGameFromPresentation} />
-  }
+          {habitFeedback && (
+            <div className={`habit-feedback ${habitFeedback.kind}`}>
+              <strong>{habitFeedback.title}</strong>
+              <p>{habitFeedback.message}</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="level-map">
+        {levels.map((level, index) => {
+          const unlocked = index <= unlockedLevel - 1
+          const isCurrent = index === currentLevelIndex
+          return (
+            <button
+              key={level.id}
+              onClick={() => selectLevel(index)}
+              className={`level-node ${unlocked ? 'unlocked' : 'locked'} ${isCurrent ? 'current' : ''}`}
+            >
+              <div className="level-emoji">{index < 3 ? '🏆' : index < 6 ? '⭐' : '🔒'}</div>
+              <div className="level-copy">
+                <strong>{level.levelLabel}</strong>
+                <span>{level.title}</span>
+              </div>
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="dashboard-mini-card">
+        <div className="mini-title">Continue Learning</div>
+        <div className="mini-level">🌱 Level {Math.min(unlockedLevel, levels.length)} · {levels[Math.min(unlockedLevel - 1, levels.length - 1)].title}</div>
+        <div className="progress-track">
+          <motion.div className="progress-fill" animate={{ width: `${currentProgress}%` }} />
+        </div>
+        <button onClick={() => selectLevel(Math.min(unlockedLevel - 1, levels.length - 1))} className="primary-button small-button">Continue</button>
+      </div>
+    </div>
+  )
+
+  const renderLesson = () => (
+    <div className="game-shell panel-glass">
+      <div className="step-pill">{currentLevel.world}</div>
+      <h2 className="panel-title">{currentLevel.levelLabel} — {currentLevel.title}</h2>
+      <div className="lesson-card">
+        <h3>What is diabetes?</h3>
+        <p>{currentLevel.fact}</p>
+        <div className="fact-pills">
+          <span>🎨 Illustrations</span>
+          <span>⚡ Short facts</span>
+          <span>🧠 Simple examples</span>
+        </div>
+      </div>
+      <button onClick={startLesson} className="primary-button">READY TO PLAY →</button>
+    </div>
+  )
+
+  const renderQuiz = () => (
+    <div className="game-shell panel-glass quiz-panel">
+      <div className="quiz-header">
+        <div className="step-pill">⭐ {currentLevel.levelLabel}</div>
+        <div className="question-counter">Question {currentLevelIndex + 1} / {levels.length}</div>
+      </div>
+
+      <div className="progress-track">
+        <motion.div className="progress-fill" animate={{ width: `${((currentLevelIndex + 1) / levels.length) * 100}%` }} />
+      </div>
+
+      <h2 className="quiz-question">{ageProfile.question}</h2>
+
+      <div className="option-list">
+        {currentLevel.options.map((option, index) => (
+          <button
+            key={option}
+            onClick={() => submitAnswer(index)}
+            className={`answer-option ${selectedAnswer === index ? 'selected' : ''}`}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+
+  const renderResult = () => (
+    <div className="game-shell panel-glass result-panel">
+      {answerResult ? (
+        <>
+          <div className="result-emoji">🎉</div>
+          <h2 className="panel-title">AMAZING, {playerName}!</h2>
+          <p className="celebration-line">You nailed it! 🧠✨</p>
+          <div className="result-stats">
+            <span>+{currentLevel.xp} XP</span>
+            <span>🔥 {streak} question streak</span>
+          </div>
+          <div className="explanation-box">
+            <p>{currentLevel.explanation}</p>
+          </div>
+          <button onClick={continueFromResult} className="primary-button">CONTINUE →</button>
+        </>
+      ) : (
+        <>
+          <div className="result-emoji wrong">❌</div>
+          <h2 className="panel-title">Not quite!</h2>
+          <p className="celebration-line">Don&apos;t give up! 💪</p>
+          <div className="explanation-box">
+            <p>Correct answer: {currentLevel.options[currentLevel.correctIndex]}</p>
+            <p>{currentLevel.explanation}</p>
+          </div>
+          <div className="inline-actions">
+            <button onClick={retryQuiz} className="secondary-button">TRY AGAIN</button>
+            <button onClick={continueFromResult} className="primary-button">CONTINUE</button>
+          </div>
+        </>
+      )}
+    </div>
+  )
+
+  const renderDashboard = () => (
+    <div className="game-shell panel-glass dashboard-panel">
+      <div className="dashboard-header">
+        <div>
+          <div className="section-label">Welcome back, {playerName}!</div>
+          <h2 className="panel-title">Your progress is glowing.</h2>
+        </div>
+        <div className="xp-badge">⭐ {xp} XP</div>
+      </div>
+
+      <div className="overview-row">
+        <div className="stat-card">
+          <span className="stat-label">🔥 Streak</span>
+          <strong>{streak} Days</strong>
+        </div>
+        <div className="stat-card">
+          <span className="stat-label">🏆 Rank</span>
+          <strong># {rank} Today</strong>
+        </div>
+      </div>
+
+      <div className="dashboard-card">
+        <div className="mini-title">Continue Learning</div>
+        <div className="mini-level">🌱 Level {Math.min(unlockedLevel, levels.length)} · {levels[Math.min(unlockedLevel - 1, levels.length - 1)].title}</div>
+        <div className="progress-track">
+          <motion.div className="progress-fill" animate={{ width: `${Math.min(100, (unlockedLevel / levels.length) * 100)}%` }} />
+        </div>
+        <button onClick={() => selectLevel(Math.min(unlockedLevel - 1, levels.length - 1))} className="primary-button small-button">CONTINUE</button>
+      </div>
+
+      <div className="challenge-card">
+        <div className="mini-title">🎯 Daily Challenge</div>
+        <div>Answer 5 diabetes questions</div>
+        <strong>Reward: +500 XP</strong>
+      </div>
+
+      <div className="leaderboard-card">
+        <div className="mini-title">🏆 Today&apos;s Players</div>
+        {leaderboard.map((player, index) => (
+          <div key={player.name} className={`leader-row ${player.name === playerName ? 'you' : ''}`}>
+            <span>#{index + 1}</span>
+            <span>{player.name}</span>
+            <strong>{player.xp}</strong>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 
   return (
-    <div className="min-h-screen max-w-5xl mx-auto px-4 py-6 sm:py-10">
-      <div className="mb-4 flex justify-end">
-        <button
-          onClick={openPresentationVersion}
-          className="px-3 py-2 rounded-lg border border-mint/40 bg-mint/10 text-mint text-xs sm:text-sm hover:bg-mint/20 transition-colors"
-        >
-          Presentation Version
-        </button>
-      </div>
+    <div className="app-shell">
+      <div className="backdrop backdrop-a" />
+      <div className="backdrop backdrop-b" />
 
-      {/* Header */}
-      <header className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="font-display text-2xl sm:text-3xl font-bold">
-            Pulse<span className="text-mint">Twin</span>
-          </h1>
-          <p className="text-sm text-warm/60">Your living digital twin</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="text-right">
-            <p className="font-mono text-xs text-warm/50">Streak</p>
-            <p className="font-mono text-lg font-semibold text-honey">🔥 {streak}</p>
+      <div className="app-frame">
+        <header className="topbar">
+          <div className="brand-mark">GlucoAlert</div>
+          <div className="topbar-stats">
+            <span>⭐ {xp} XP</span>
+            <span>🔥 {streak} day streak</span>
           </div>
-          <div className="text-right">
-            <p className="font-mono text-xs text-warm/50">Awareness</p>
-            <p className="font-mono text-lg font-semibold text-mint">✦ {awarenessPoints}</p>
-          </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Disclaimer banner */}
-      <div className="mb-6 px-4 py-2 rounded-lg bg-honey/10 border border-honey/30 text-honey text-xs text-center">
-        {DISCLAIMER}
-      </div>
-
-      {/* Main grid */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Left column: The Twin */}
-        <div className="flex flex-col items-center">
-          <div className="relative w-full max-w-sm rounded-3xl bg-surface border border-warm/10 p-6 flex flex-col items-center">
-            <div className="flex items-center gap-2 mb-4">
-              <span
-                className="px-3 py-1 rounded-full text-xs font-mono font-semibold"
-                style={{ color: bandInfo.color, background: `${bandInfo.color}15` }}
-              >
-                {bandInfo.label}
-              </span>
-              <span className="text-xs text-warm/60">{bandInfo.mood}</span>
-            </div>
-
-            <LivingTwin
-              syncScore={syncScore}
-              band={band}
-              lastAction={lastAction}
-              actionCount={actionCount}
-              revealMode={revealMode}
-              activityType={activeActivity?.config.type ?? null}
-            />
-
-            <p className="mt-4 text-sm text-warm/70 text-center">{bandInfo.description}</p>
-
-            {/* Sync bar */}
-            <div className="mt-4 w-full">
-              <div className="flex justify-between text-xs font-mono text-warm/50 mb-1">
-                <span>Desynced</span>
-                <span>Synced</span>
-              </div>
-              <div className="h-2 rounded-full bg-pine overflow-hidden">
-                <motion.div
-                  className="h-full rounded-full"
-                  style={{ background: bandInfo.color }}
-                  animate={{ width: `${syncScore}%` }}
-                  transition={{ type: 'spring', stiffness: 120, damping: 20 }}
-                />
-              </div>
-            </div>
-
-            {/* Toggle buttons */}
-            <div className="mt-4 flex gap-2 w-full">
-              <button
-                onClick={() => setRevealMode(!revealMode)}
-                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                  revealMode
-                    ? 'bg-mint/15 border-mint/40 text-mint'
-                    : 'bg-pine/40 border-warm/10 text-warm/70 hover:border-mint/40'
-                }`}
-              >
-                {revealMode ? 'Hide Reveal' : '🔬 Reveal Mode'}
-              </button>
-              <button
-                onClick={() => setShowProjection(!showProjection)}
-                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                  showProjection
-                    ? 'bg-honey/15 border-honey/40 text-honey'
-                    : 'bg-pine/40 border-warm/10 text-warm/70 hover:border-honey/40'
-                }`}
-              >
-                {showProjection ? 'Hide Projection' : '⏳ Time Projection'}
-              </button>
-            </div>
-          </div>
-
-          {/* Reveal + Projection panels */}
-          <AnimatePresence>
-            {revealMode && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="w-full max-w-sm mt-4 overflow-hidden"
-              >
-                <RevealMode syncScore={syncScore} band={band} />
-              </motion.div>
-            )}
-            {showProjection && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="w-full max-w-sm mt-4 overflow-hidden"
-              >
-                <TimeProjection syncScore={syncScore} history={history} />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Right column: Actions + systems */}
-        <div className="space-y-4">
-          <CommandBox />
-
-          <HealthInsights />
-          <PreventionLab />
-          <StatusPanel />
-          <Timeline />
-          <Coach />
-
-          <div>
-            <h2 className="font-display text-xl font-semibold mb-2">Quick Log</h2>
-            <ActionPanel onAction={handleAction} />
-          </div>
-
-          <ActivityPanel />
-          <ActiveActivityTracker />
-
-          <Quiz />
-          <HistoryChart />
-          <Badges />
-
-          <button
-            onClick={reset}
-            className="w-full px-4 py-2 rounded-lg border border-coral/30 text-coral text-sm hover:bg-coral/10 transition-colors"
+        <AnimatePresence mode="wait">
+          <motion.main
+            key={screen}
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -18 }}
+            transition={{ duration: 0.25 }}
           >
-            Reset Twin
-          </button>
-        </div>
+            {screen === 'landing' && renderLanding()}
+            {screen === 'name' && renderNameScreen()}
+            {screen === 'age' && renderAgeScreen()}
+            {screen === 'journey' && renderJourney()}
+            {screen === 'lesson' && renderLesson()}
+            {screen === 'quiz' && renderQuiz()}
+            {screen === 'result' && renderResult()}
+            {screen === 'dashboard' && renderDashboard()}
+          </motion.main>
+        </AnimatePresence>
       </div>
-
-      {/* Footer disclaimer */}
-      <footer className="mt-10 text-center text-xs text-warm/40">
-        {DISCLAIMER} · Built for the Girl Code hackathon, health-tech track.
-      </footer>
     </div>
   )
 }
